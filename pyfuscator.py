@@ -228,21 +228,29 @@ class Renamer(ast.NodeTransformer):
         return self.generic_visit(node)
 
 
-def main():
-    with open('input.py') as f:
+def _main():
+    import argparse
+    parser = argparse.ArgumentParser(description='Obfuscate a Python script')
+    parser.add_argument('input', type=str,
+                        help='path to the input script')
+
+    parser.add_argument('-o', '--output', type=str,
+                        help='path to the output script')
+
+    args = parser.parse_args()
+    obfuscate(args.input, args.output)
+
+def obfuscate(in_fn, out_fn):
+    with open(in_fn) as f:
         s = f.read()
 
     root = ast.parse(s)
 
-    for name in get_body_defs(root).locals:
-        print(name)
-
     root = Renamer().visit(root)
 
-
-    with open('output.py', 'w') as f:
+    with open(out_fn, 'w') as f:
         f.write(ast.unparse(root))
 
 
 if __name__ == '__main__':
-    main()
+    _main()
