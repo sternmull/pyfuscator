@@ -35,3 +35,8 @@ x = 123
 
 def f(a: 'annotation', _b=1, c=2, *d, e, f=3, **g):
     print(a, b, c, d, e, f, g)
+
+def _my_func(a, b,/):
+    print(a, b)
+
+_my_func(12,34)
