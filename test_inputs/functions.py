@@ -101,3 +101,8 @@ w1()
 
 # ---- local imports
 
+def importing():
+    import re as my_re
+    print(my_re.match(r'.*?(a+)', 'xxxaaa-ay').groups())
+
+importing()

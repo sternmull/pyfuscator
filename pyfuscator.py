@@ -187,10 +187,11 @@ class Renamer(ast.NodeTransformer):
         return node
 
     def visit_Import(self, node):
+        node.names = list(node.names)
         for alias in node.names:
             if alias.asname:
                 alias.asname = self._resolve(alias.asname)
-        return node
+        return self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
         if self._inClass:
@@ -202,7 +203,8 @@ class Renamer(ast.NodeTransformer):
         self._inClass = False
 
         defs = get_body_defs(node)
-        scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals}
+        scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals} | \
+                {name : self._new_name(name) for name in defs.imports_as}
 
         args : ast.arguments = node.args
         for arg in args.args:
