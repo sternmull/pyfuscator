@@ -14,13 +14,13 @@ TODO:
 
 import ast
 
-def _names(nameOrTuple):
-    if isinstance(nameOrTuple, ast.Name):
-        return [nameOrTuple.id]
-    elif isinstance(nameOrTuple, ast.Tuple):
-        return [name.id for name in nameOrTuple.elts]
+def _names(nameOrNames):
+    if isinstance(nameOrNames, ast.Name):
+        return [nameOrNames.id]
+    elif isinstance(nameOrNames, (ast.Tuple, ast.List)):
+        return [name.id for name in nameOrNames.elts]
     else:
-        assert(isinstance(nameOrTuple, ast.Attribute))
+        assert(isinstance(nameOrNames, ast.Attribute))
         return []
 
 class BodyDefCollector(ast.NodeVisitor):
@@ -84,8 +84,14 @@ class BodyDefCollector(ast.NodeVisitor):
 
     def visit_With(self, node):
         for item in node.items:
-            if item.optional_vars:
+            for name in _names(item.optional_vars):
                 self._add_local(item.optional_vars.id)
+
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node):
+        if node.name:
+            self._add_local(node.name)
 
         self.generic_visit(node)
 
@@ -257,6 +263,12 @@ class Renamer(ast.NodeTransformer):
 
     def visit_Attribute(self, node):
         node.attr = self._attr_name(node.attr)
+        return self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node):
+        if node.name:
+            node.name = self._resolve(node.name)
+
         return self.generic_visit(node)
 
 

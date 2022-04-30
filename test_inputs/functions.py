@@ -66,3 +66,38 @@ def outer2(j, _k):
 
 outer2(543, 2323)
 print(y)
+
+# ---- exceptions
+
+def e1(x):
+    try:
+        raise ValueError('bad value')
+    except ValueError as e:
+        print(e, x)
+
+e1('now you know')
+
+
+# ---- with
+
+from contextlib import contextmanager
+
+@contextmanager
+def trace_scope(name):
+    print('scope entered:', name)
+    try:
+        yield name
+    finally:
+        print('scope exited:', name)
+
+def w1():
+    with trace_scope('first') as s:
+        print(s)
+
+    with trace_scope('alpha') as a, trace_scope('beta') as b:
+        print(a, b)
+
+w1()
+
+# ---- local imports
+
