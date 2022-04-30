@@ -17,8 +17,8 @@ def _foo(a, b):
             self._func()
         def _func(self):
             return 3
-        def pub(self):
-            return self._x * 3
+        def pub(self, k):
+            return self._x * 3 + k
     return a + b
 
 # class MyClass:
@@ -32,3 +32,6 @@ x = 123
 #     pass
 
 # x.y = 5
+
+def f(a: 'annotation', _b=1, c=2, *d, e, f=3, **g):
+    print(a, b, c, d, e, f, g)

@@ -1,3 +1,15 @@
+"""
+TODO:
+- tests
+- renamer
+  - function arguments
+  - class arguments
+  - f-strings
+  - match
+  - comprehensions
+"""
+
+
 import ast
 
 def _names(nameOrTuple):
@@ -161,9 +173,19 @@ class Renamer(ast.NodeTransformer):
         scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals}
         for arg in node.args.args:
             org = arg.arg
-            arg.arg = scope[org] = self._new_name(org)
+            if self._is_nonpublic(org):
+                arg.arg = scope[org] = self._new_name(org)
 
-        # TODO: kwargs etc.
+        # TODO: proper support for kwargs etc. (i don't know enough about positonal/keyword and pos/kw-only stuff)
+        if node.args.vararg:
+            org = node.args.vararg.arg
+            new = node.args.vararg.arg = self._new_name(org)
+            scope[org] = new
+
+        if node.args.kwarg:
+            org = node.args.kwarg.arg
+            new = node.args.kwarg.arg = self._new_name(org)
+            scope[org] = new
 
         self._enter(scope)
         ret = self.generic_visit(node)
