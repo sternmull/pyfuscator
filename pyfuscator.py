@@ -91,12 +91,35 @@ class Renamer(ast.NodeTransformer):
     def __init__(self):
         self._lastNameId = 0
         self._org2new = list() # topmost scope is the first
+        self._lastAttrId = 0
+        self._inClass = False
+        self._attr2new = dict()
+
+    def _is_nonpublic(self, name):
+        if name.startswith('__'):
+            return False # don't rename special attributes
+
+        if not name.startswith('_'):
+            return False # don't rename non-private attributes
+
+        return True
 
     def _new_name(self, orgName):
-        if orgName.startswith('__'):
-            return orgName
         self._lastNameId += 1
         return f'_v{self._lastNameId}'
+
+    def _attr_name(self, orgName):
+        try:
+            return self._attr2new[orgName]
+        except KeyError:
+            if self._is_nonpublic(orgName):
+                self._lastAttrId += 1
+                new = f'_a{self._lastAttrId}'
+            else:
+                new = orgName
+
+            self._attr2new[orgName] = new
+            return new
 
     def _enter(self, scope):
         self._org2new.insert(0, scope)
@@ -116,7 +139,7 @@ class Renamer(ast.NodeTransformer):
     def visit_Module(self, node):
         assert(len(self._org2new) == 0)
 
-        scope = {name : self._new_name(name) for name in get_body_defs(node).locals}
+        scope = {name : self._new_name(name) for name in get_body_defs(node).locals if self._is_nonpublic(name)}
         self._enter(scope)
 
         return self.generic_visit(node)
@@ -126,7 +149,13 @@ class Renamer(ast.NodeTransformer):
         return node
 
     def visit_FunctionDef(self, node):
-        node.name = self._resolve(node.name)
+        if self._inClass:
+            node.name = self._attr_name(node.name)
+        else:
+            node.name = self._resolve(node.name)
+
+        wasInClass = self._inClass
+        self._inClass = False
 
         defs = get_body_defs(node)
         scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals}
@@ -134,9 +163,12 @@ class Renamer(ast.NodeTransformer):
             org = arg.arg
             arg.arg = scope[org] = self._new_name(org)
 
+        # TODO: kwargs etc.
+
         self._enter(scope)
         ret = self.generic_visit(node)
         self._exit()
+        self._inClass = wasInClass
         return ret
 
     def visit_AsyncFunctionDef(self, node):
@@ -153,15 +185,21 @@ class Renamer(ast.NodeTransformer):
         return self._visit_xxxal(node)
 
     def visit_ClassDef(self, node):
-        node.name = self._resolve(node.name)
+        if self._inClass:
+            node.name = self._attr_name(node.name)
+        else:
+            node.name = self._resolve(node.name)
 
-        defs = get_body_defs(node)
-        scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals}
+        wasInClass = self._inClass
+        self._inClass = True
 
-        self._enter(scope)
         ret = self.generic_visit(node)
-        self._exit()
+        self._inClass = wasInClass
         return ret
+
+    def visit_Attribute(self, node):
+        node.attr = self._attr_name(node.attr)
+        return self.generic_visit(node)
 
 
 def main():
