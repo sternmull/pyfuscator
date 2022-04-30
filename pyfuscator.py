@@ -23,10 +23,11 @@ def _names(nameOrTuple):
 class BodyDefCollector(ast.NodeVisitor):
     def __init__(self, root):
         self._root = root
-        self.locals = set() # also x for "import foo as x"
+        self.locals = set()
         self.globals = set()
         self.nonlocals = set()
         self.imports = set() # x for "import x"
+        self.imports_as = set() # y for "import x as y"
 
     def _add_local(self, name):
         self.locals.add(name)
@@ -57,7 +58,7 @@ class BodyDefCollector(ast.NodeVisitor):
     def visit_Import(self, node):
         for alias in node.names:
             if alias.asname:
-                self._add_local(alias.asname)
+                self.imports_as.add(alias.asname)
             else:
                 self.imports.add(alias.name)
 
@@ -150,13 +151,21 @@ class Renamer(ast.NodeTransformer):
     def visit_Module(self, node):
         assert(len(self._org2new) == 0)
 
-        scope = {name : self._new_name(name) for name in get_body_defs(node).locals if self._is_nonpublic(name)}
+        defs = get_body_defs(node)
+        scope = {name : self._new_name(name) for name in defs.locals if self._is_nonpublic(name)} | \
+                {name : self._new_name(name) for name in defs.imports_as}
         self._enter(scope)
 
         return self.generic_visit(node)
 
     def visit_Name(self, node):
         node.id = self._resolve(node.id)
+        return node
+
+    def visit_Import(self, node):
+        for alias in node.names:
+            if alias.asname:
+                alias.asname = self._resolve(alias.asname)
         return node
 
     def visit_FunctionDef(self, node):

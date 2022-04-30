@@ -1,3 +1,8 @@
+_a = 'hello'
+b = 'world'
+
+print(_a, b)
+
 def foo(a, b,/, c):
     return a + b + c
 
@@ -25,3 +30,9 @@ priv_global_user()
 print(_y)
 _y = '_y str'
 print(_y)
+
+
+import re as my_re
+
+_m = my_re.match('a+(b+).*', 'aaabbccc')
+print(_m.groups())
