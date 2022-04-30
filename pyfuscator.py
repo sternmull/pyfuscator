@@ -1,11 +1,14 @@
 """
 TODO:
-- tests
 - renamer
+  - use __all__ on module level
   - class arguments
   - f-strings
   - match
   - comprehensions
+  - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
+- remove code that is not used (private functions/classes that are not used anywhere)
+
 """
 
 
@@ -106,6 +109,8 @@ class Renamer(ast.NodeTransformer):
         self._lastAttrId = 0
         self._inClass = False
         self._attr2new = dict()
+        self._lastArgId = 0
+        self._arg2new = dict()
 
     def _is_nonpublic(self, name):
         if name.startswith('__'):
@@ -126,11 +131,24 @@ class Renamer(ast.NodeTransformer):
         except KeyError:
             if self._is_nonpublic(orgName):
                 self._lastAttrId += 1
-                new = f'_a{self._lastAttrId}'
+                new = f'_attr{self._lastAttrId}'
             else:
                 new = orgName
 
             self._attr2new[orgName] = new
+            return new
+
+    def _arg_name(self, orgName): # TODO: deduplicate with _attr_name
+        try:
+            return self._arg2new[orgName]
+        except KeyError:
+            if self._is_nonpublic(orgName):
+                self._lastArgId += 1
+                new = f'_arg{self._lastArgId}'
+            else:
+                new = orgName
+
+            self._arg2new[orgName] = new
             return new
 
     def _enter(self, scope):
@@ -183,8 +201,7 @@ class Renamer(ast.NodeTransformer):
         args : ast.arguments = node.args
         for arg in args.args:
             org = arg.arg
-            if self._is_nonpublic(org):
-                arg.arg = scope[org] = self._new_name(org)
+            arg.arg = scope[org] = self._arg_name(org)
 
         for arg in args.posonlyargs:
             org = arg.arg
@@ -206,11 +223,17 @@ class Renamer(ast.NodeTransformer):
         self._inClass = wasInClass
         return ret
 
+    def visit_Call(self, node):
+        for kw in node.keywords:
+            kw.arg = self._arg_name(kw.arg)
+
+        return self.generic_visit(node)
+
     def visit_AsyncFunctionDef(self, node):
         return self.visit_FunctionDef(node)
 
     def _visit_xxxal(self, node):
-        node.names = map(self._resolve, node.names)
+        node.names = [self._resolve(name) for name in node.names]
         return node
 
     def visit_Global(self, node):
