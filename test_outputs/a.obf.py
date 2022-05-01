@@ -1,14 +1,14 @@
-_v4 = 'hello'
+_a1 = 'hello'
 b = 'world'
-print(_v4, b)
+print(_a1, b)
 
-def foo(_v6, _v7, /, c):
-    return _v6 + _v7 + c
+def foo(_v1, _v2, /, c):
+    return _v1 + _v2 + c
 print(foo(11, 22, 33))
 
-def _v1(_v8, _v9, /):
-    return _v8 + _v9
-print(_v1(111, 222))
+def _a4(_v3, _v4, /):
+    return _v3 + _v4
+print(_a4(111, 222))
 
 def pub_global_user():
     global y
@@ -19,12 +19,12 @@ y = 'y str'
 print(y)
 
 def priv_global_user():
-    global _v3
-    _v3 = 123
+    global _a2
+    _a2 = 123
 priv_global_user()
-print(_v3)
-_v3 = '_y str'
-print(_v3)
-import re as _v5
-_v2 = _v5.match('a+(b+).*', 'aaabbccc')
-print(_v2.groups())
+print(_a2)
+_a2 = '_y str'
+print(_a2)
+import re as my_re
+_a3 = my_re.match('a+(b+).*', 'aaabbccc')
+print(_a3.groups())

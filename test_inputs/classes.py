@@ -50,3 +50,4 @@ class _Outer:
 
     class _Inner(_InnerBase):
         pass
+

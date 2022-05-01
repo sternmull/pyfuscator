@@ -8,8 +8,10 @@ TODO:
   - class arguments
   - match
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
+  - Commandline options to obfuscate mulitple files?
+    In general support and test multi-file operation that allows to access private attributes of other modules.
 - remove code that is not used (private functions/classes that are not used anywhere)
-
+-
 
 Damn, class names are used as attributes and "normal" names:
 
@@ -199,11 +201,12 @@ class Renamer(ast.NodeTransformer):
         assert(len(self._org2new) == 0)
 
         defs = get_body_defs(node)
-        scope = {name : self._new_name(name) for name in defs.locals if self._is_nonpublic(name)} | \
-                {name : self._new_name(name) for name in defs.imports_as}
+        scope = {name : self._attr_name(name) for name in defs.locals if self._is_nonpublic(name)} | \
+                {name : self._attr_name(name) for name in defs.imports_as}
         self._enter(scope)
-
-        return self.generic_visit(node)
+        ret = self.generic_visit(node)
+        self._exit()
+        return ret
 
     def visit_Name(self, node):
         node.id = self._resolve(node.id)

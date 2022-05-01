@@ -13,9 +13,10 @@ print(_f2(b=84, a=853))
 
 def _walruss(_x):
     if y := _x * 2:
-        print('nonzero y', y)
+        print('nonzero y')
     else:
         print('y is zero')
+    print('y is', y)
 
 _walruss(5)
 _walruss(0)
