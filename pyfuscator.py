@@ -11,21 +11,6 @@ TODO:
   - Commandline options to obfuscate mulitple files?
     In general support and test multi-file operation that allows to access private attributes of other modules.
 - remove code that is not used (private functions/classes that are not used anywhere)
--
-
-Damn, class names are used as attributes and "normal" names:
-
-class A:
-    class B:
-        pass
-    class C(B): # B is looked up in scope
-        def __init__(self):
-            super(C, self).__init__() # C is looked up in scope
-
-A.B # B is an attribute name
-A.C # C is an attribute name
-
-
 """
 
 
