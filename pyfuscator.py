@@ -2,6 +2,8 @@
 TODO:
 - renamer
   - use __all__ on module level
+  - Make sure to not use identifiers that are already present.
+    Actually i am not sure collisions are practically possible right now, maybe it is already safe!
   - class arguments
   - f-strings
   - match
@@ -199,6 +201,12 @@ class Renamer(ast.NodeTransformer):
         else:
             node.name = self._resolve(node.name)
 
+        return self._visit_function_or_lambda(node)
+
+    def visit_Lambda(self, node):
+        return self._visit_function_or_lambda(node)
+
+    def _visit_function_or_lambda(self, node):
         wasInClass = self._inClass
         self._inClass = False
 

@@ -127,3 +127,12 @@ def importing():
     print(my_re.match(r'.*?(a+)', 'xxxaaa-ay').groups())
 
 importing()
+
+# ---- lambda
+
+def lambda1(a, b,/):
+    f = lambda x, y,/: a + x + y + b
+    return f(a*2, b*3)
+
+print(lambda1('ab', 'cd'))
+
