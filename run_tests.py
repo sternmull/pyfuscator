@@ -2,6 +2,7 @@ import pyfuscator
 from pathlib import (Path)
 import sys
 import subprocess
+import difflib
 
 this_dir = Path(__file__).parent.resolve()
 test_in_dir = this_dir / 'test_inputs'
@@ -13,22 +14,32 @@ def main():
             continue
         out.unlink()
 
+    failed_tests = list()
+
     for org_py in test_in_dir.glob('*.py'):
         print('==== Testing', org_py)
         out_base = test_out_dir / org_py.name
         obf_py = out_base.with_suffix('.obf.py')
         pyfuscator.obfuscate(org_py, obf_py)
 
-        org_out = out_base.with_suffix('.org.out')
-        obf_out = out_base.with_suffix('.obf.out')
-
-        for py, out in [(org_py, org_out),
-                        (obf_py, obf_out)]:
+        results = list()
+        for py in [org_py, obf_py]:
             r = subprocess.run([sys.executable, py], capture_output=True, text=True)
-            with open(out, 'w') as f:
-                print(f'exit code = {r.returncode}\n---------- stdout:\n{r.stdout}\n---------- stderr:\n{r.stderr}', file=f)
+            results.append(f'exit code = {r.returncode}\n---------- stdout:\n{r.stdout}\n---------- stderr:\n{r.stderr}\n')
 
-        subprocess.check_call(['diff', '-u', org_out, obf_out])
+        org, obf = results
+        if org != obf:
+            failed_tests.append(org_py)
+            print('\n'.join(difflib.unified_diff(org.splitlines(), obf.splitlines(), 'output for original script', 'output for obfuscated script')))
+
+    if failed_tests:
+        print(f'{len(failed_tests)} tests failed:')
+        for fn in failed_tests:
+            print('  ', fn)
+        return 1
+    else:
+        print('All tests succeeded.')
+        return 0
 
 if __name__ == '__main__':
-    main()
+    exit(main())
