@@ -19,12 +19,12 @@ y = 'y str'
 print(y)
 
 def priv_global_user():
-    global _v4
-    _v4 = 123
+    global _v3
+    _v3 = 123
 priv_global_user()
-print(_v4)
-_v4 = '_y str'
-print(_v4)
+print(_v3)
+_v3 = '_y str'
+print(_v3)
 import re as _v5
-_v3 = _v5.match('a+(b+).*', 'aaabbccc')
-print(_v3.groups())
+_v4 = _v5.match('a+(b+).*', 'aaabbccc')
+print(_v4.groups())

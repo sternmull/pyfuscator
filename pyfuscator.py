@@ -78,11 +78,17 @@ class BodyDefCollector(ast.NodeVisitor):
         for name in node.names:
             self._add_nonlocal(name)
 
-    def visit_For(self, node):
+    def _visit_for(self, node):
         for name in _names(node.target):
             self._add_local(name)
 
         self.generic_visit(node)
+
+    def visit_For(self, node):
+        return self._visit_for(node)
+
+    def visit_AsyncFor(self, node):
+        return self._visit_for(node)
 
     def visit_With(self, node):
         for item in node.items:
