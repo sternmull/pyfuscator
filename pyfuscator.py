@@ -2,12 +2,27 @@
 TODO:
 - renamer
   - use __all__ on module level
+  - support configurable blacklists for names (seperate vars, params, attribs?) that should not be replaced
   - Make sure to not use identifiers that are already present.
     Actually i am not sure collisions are practically possible right now, maybe it is already safe!
   - class arguments
   - match
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
 - remove code that is not used (private functions/classes that are not used anywhere)
+
+
+Damn, class names are used as attributes and "normal" names:
+
+class A:
+    class B:
+        pass
+    class C(B): # B is looked up in scope
+        def __init__(self):
+            super(C, self).__init__() # C is looked up in scope
+
+A.B # B is an attribute name
+A.C # C is an attribute name
+
 
 """
 
@@ -122,7 +137,6 @@ class Renamer(ast.NodeTransformer):
         self._lastNameId = 0
         self._org2new = list() # topmost scope is the first
         self._lastAttrId = 0
-        self._inClass = False
         self._attr2new = dict()
         self._lastArgId = 0
         self._arg2new = dict()
@@ -146,7 +160,7 @@ class Renamer(ast.NodeTransformer):
         except KeyError:
             if self._is_nonpublic(orgName):
                 self._lastAttrId += 1
-                new = f'_attr{self._lastAttrId}'
+                new = f'_a{self._lastAttrId}'
             else:
                 new = orgName
 
@@ -159,7 +173,7 @@ class Renamer(ast.NodeTransformer):
         except KeyError:
             if self._is_nonpublic(orgName):
                 self._lastArgId += 1
-                new = f'_arg{self._lastArgId}'
+                new = f'_p{self._lastArgId}'
             else:
                 new = orgName
 
@@ -203,20 +217,13 @@ class Renamer(ast.NodeTransformer):
         return self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
-        if self._inClass:
-            node.name = self._attr_name(node.name)
-        else:
-            node.name = self._resolve(node.name)
-
+        node.name = self._resolve(node.name)
         return self._visit_function_or_lambda(node)
 
     def visit_Lambda(self, node):
         return self._visit_function_or_lambda(node)
 
     def _visit_function_or_lambda(self, node):
-        wasInClass = self._inClass
-        self._inClass = False
-
         defs = get_body_defs(node)
         scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals} | \
                 {name : self._new_name(name) for name in defs.imports_as}
@@ -243,7 +250,6 @@ class Renamer(ast.NodeTransformer):
         self._enter(scope)
         ret = self.generic_visit(node)
         self._exit()
-        self._inClass = wasInClass
         return ret
 
     def visit_Call(self, node):
@@ -266,16 +272,15 @@ class Renamer(ast.NodeTransformer):
         return self._visit_xxxal(node)
 
     def visit_ClassDef(self, node):
-        if self._inClass:
-            node.name = self._attr_name(node.name)
-        else:
-            node.name = self._resolve(node.name)
+        node.name = self._resolve(node.name)
 
-        wasInClass = self._inClass
-        self._inClass = True
+        defs = get_body_defs(node)
+        scope = {name : self._attr_name(name) for name in defs.locals - defs.globals - defs.nonlocals} | \
+                {name : self._attr_name(name) for name in defs.imports_as}
 
+        self._enter(scope)
         ret = self.generic_visit(node)
-        self._inClass = wasInClass
+        self._exit()
         return ret
 
     def visit_Attribute(self, node):
