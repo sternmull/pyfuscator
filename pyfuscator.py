@@ -5,7 +5,6 @@ TODO:
   - Make sure to not use identifiers that are already present.
     Actually i am not sure collisions are practically possible right now, maybe it is already safe!
   - class arguments
-  - f-strings
   - match
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
 - remove code that is not used (private functions/classes that are not used anywhere)
