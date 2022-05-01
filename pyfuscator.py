@@ -7,7 +7,6 @@ TODO:
   - class arguments
   - f-strings
   - match
-  - comprehensions
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
 - remove code that is not used (private functions/classes that are not used anywhere)
 
@@ -59,6 +58,9 @@ class BodyDefCollector(ast.NodeVisitor):
         for t in node.targets:
             for name in _names(t):
                 self._add_local(name)
+
+    def visit_NamedExpr(self, node):
+        self._add_local(node.target.id)
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -287,6 +289,27 @@ class Renamer(ast.NodeTransformer):
 
         return self.generic_visit(node)
 
+
+    def _visit_XxxComp(self, node):
+        scope = {g.target.id : self._new_name(g.target.id) for g in node.generators}
+        self._enter(scope)
+        for g in node.generators:
+            g.target.id = self._resolve(g.target.id)
+        ret = self.generic_visit(node)
+        self._exit()
+        return ret
+
+    def visit_ListComp(self, node):
+        return self._visit_XxxComp(node)
+
+    def visit_SetComp(self, node):
+        return self._visit_XxxComp(node)
+
+    def visit_DictComp(self, node):
+        return self._visit_XxxComp(node)
+
+    def visit_GeneratorExp(self, node):
+        return self._visit_XxxComp(node)
 
 def _main():
     import argparse

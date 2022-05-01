@@ -20,4 +20,9 @@ async def f3(n,/):
     async for x in _gen(n):
         print('async for', x)
 
+    print(x)
+    y = [x + 100 async for x in _gen(3)]
+    print(x)
+    print(y)
+
 asyncio.run(f3(5))

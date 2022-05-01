@@ -11,6 +11,16 @@ def _f2(a, b):
 
 print(_f2(b=84, a=853))
 
+def _walruss(_x):
+    if y := _x * 2:
+        print('nonzero y', y)
+    else:
+        print('y is zero')
+
+_walruss(5)
+_walruss(0)
+
+
 def _f3(_a, _b, _c=5): # arguments will be renamed because of underscore
     return _a - _b * _c
 
@@ -135,4 +145,3 @@ def lambda1(a, b,/):
     return f(a*2, b*3)
 
 print(lambda1('ab', 'cd'))
-

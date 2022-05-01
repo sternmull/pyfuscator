@@ -1,14 +1,14 @@
-_v2 = 'hello'
+_v1 = 'hello'
 b = 'world'
-print(_v2, b)
+print(_v1, b)
 
 def foo(_v6, _v7, /, c):
     return _v6 + _v7 + c
 print(foo(11, 22, 33))
 
-def _v1(_v8, _v9, /):
+def _v4(_v8, _v9, /):
     return _v8 + _v9
-print(_v1(111, 222))
+print(_v4(111, 222))
 
 def pub_global_user():
     global y
@@ -26,5 +26,5 @@ print(_v3)
 _v3 = '_y str'
 print(_v3)
 import re as _v5
-_v4 = _v5.match('a+(b+).*', 'aaabbccc')
-print(_v4.groups())
+_v2 = _v5.match('a+(b+).*', 'aaabbccc')
+print(_v2.groups())
