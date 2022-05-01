@@ -98,7 +98,7 @@ class BodyDefCollector(ast.NodeVisitor):
 
         self.generic_visit(node)
 
-    # TODO: visist_Match for as_pattern and capture_pattern and maybe more!
+    # TODO: visit_Match for as_pattern and capture_pattern and maybe more!
 
 
 def get_body_defs(node):
