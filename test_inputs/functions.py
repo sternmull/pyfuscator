@@ -5,7 +5,9 @@ def f1(a, b):
 print(f1(11, 22))
 
 def _f2(a, b):
-    return a - b
+    q = 'q'
+    x, y = 'xy'
+    return (a - b, x, y, q)
 
 print(_f2(b=84, a=853))
 
@@ -77,6 +79,25 @@ def e1(x):
 
 e1('now you know')
 
+# ---- for loops
+
+def _for1(n,/):
+    acc = list()
+    for x in 'abc':
+        acc.append(x)
+    print(x, acc)
+
+    acc = list()
+    for a, b in enumerate('ABC'):
+        acc.append((a, b))
+    print(a, b, acc)
+
+    x = 2
+    for i in range(1, n):
+        x *= i
+    print(x)
+
+_for1(10)
 
 # ---- with
 
