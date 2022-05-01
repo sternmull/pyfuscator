@@ -5,7 +5,6 @@ TODO:
   - support configurable blacklists for names (seperate vars, params, attribs?) that should not be replaced
   - Make sure to not use identifiers that are already present.
     Actually i am not sure collisions are practically possible right now, maybe it is already safe!
-  - class arguments
   - match
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
   - Commandline options to obfuscate mulitple files?
@@ -232,7 +231,8 @@ class Renamer(ast.NodeTransformer):
 
     def visit_Call(self, node):
         for kw in node.keywords:
-            kw.arg = self._arg_name(kw.arg)
+            if kw.arg:
+                kw.arg = self._arg_name(kw.arg)
 
         return self.generic_visit(node)
 
@@ -243,12 +243,16 @@ class Renamer(ast.NodeTransformer):
     visit_Global = _visit_xxxal
     visit_Nonlocal = _visit_xxxal
 
-    def visit_ClassDef(self, node):
+    def visit_ClassDef(self, node : ast.ClassDef):
         node.name = self._resolve(node.name)
 
         defs = get_body_defs(node)
         scope = {name : self._attr_name(name, True) for name in defs.locals - defs.globals - defs.nonlocals} | \
                 {name : self._attr_name(name, True) for name in defs.imports_as}
+
+        for kw in node.keywords:
+            org = kw.arg
+            kw.arg = scope[org] = self._arg_name(org)
 
         self._enter(scope)
         ret = self.generic_visit(node)

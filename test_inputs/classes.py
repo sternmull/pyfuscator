@@ -68,3 +68,16 @@ try:
     exit(1)
 except AttributeError:
     print('this is expcted for lookup of a mangled property from outside the class')
+
+
+
+# see https://docs.python.org/3/reference/datamodel.html#object.__init_subclass__
+class Philosopher:
+    def __init_subclass__(cls, /, _default_name, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.default_name = _default_name
+
+class AustralianPhilosopher(Philosopher, _default_name="Bruce"):
+    pass
+
+AustralianPhilosopher()
