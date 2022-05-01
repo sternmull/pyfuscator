@@ -49,11 +49,9 @@ class BodyDefCollector(ast.NodeVisitor):
         else:
             self._add_local(node.name)
 
-    def visit_FunctionDef(self, node):
-        return self._visit_def(node)
-
-    def visit_AsyncFunctionDef(self, node):
-        return self._visit_def(node)
+    visit_FunctionDef = _visit_def
+    visit_AsyncFunctionDef = _visit_def
+    visit_ClassDef = _visit_def
 
     def visit_Assign(self, node):
         for t in node.targets:
@@ -70,9 +68,6 @@ class BodyDefCollector(ast.NodeVisitor):
             else:
                 self.imports.add(alias.name)
 
-    def visit_ClassDef(self, node):
-        self._visit_def(node)
-
     def visit_Global(self, node):
         for name in node.names:
             self._add_global(name)
@@ -87,11 +82,8 @@ class BodyDefCollector(ast.NodeVisitor):
 
         self.generic_visit(node)
 
-    def visit_For(self, node):
-        return self._visit_for(node)
-
-    def visit_AsyncFor(self, node):
-        return self._visit_for(node)
+    visit_For = _visit_for
+    visit_AsyncFor = _visit_for
 
     def visit_With(self, node):
         for item in node.items:
@@ -204,13 +196,6 @@ class Renamer(ast.NodeTransformer):
                 alias.asname = self._resolve(alias.asname)
         return self.generic_visit(node)
 
-    def visit_FunctionDef(self, node):
-        node.name = self._resolve(node.name)
-        return self._visit_function_or_lambda(node)
-
-    def visit_Lambda(self, node):
-        return self._visit_function_or_lambda(node)
-
     def _visit_function_or_lambda(self, node):
         defs = get_body_defs(node)
         scope = {name : self._new_name(name) for name in defs.locals - defs.globals - defs.nonlocals} | \
@@ -240,24 +225,25 @@ class Renamer(ast.NodeTransformer):
         self._exit()
         return ret
 
+    def visit_FunctionDef(self, node):
+        node.name = self._resolve(node.name)
+        return self._visit_function_or_lambda(node)
+
+    visit_AsyncFunctionDef = visit_FunctionDef
+    visit_Lambda = _visit_function_or_lambda
+
     def visit_Call(self, node):
         for kw in node.keywords:
             kw.arg = self._arg_name(kw.arg)
 
         return self.generic_visit(node)
 
-    def visit_AsyncFunctionDef(self, node):
-        return self.visit_FunctionDef(node)
-
     def _visit_xxxal(self, node):
         node.names = [self._resolve(name) for name in node.names]
         return node
 
-    def visit_Global(self, node):
-        return self._visit_xxxal(node)
-
-    def visit_Nonlocal(self, node):
-        return self._visit_xxxal(node)
+    visit_Global = _visit_xxxal
+    visit_Nonlocal = _visit_xxxal
 
     def visit_ClassDef(self, node):
         node.name = self._resolve(node.name)
@@ -281,7 +267,6 @@ class Renamer(ast.NodeTransformer):
 
         return self.generic_visit(node)
 
-
     def _visit_XxxComp(self, node):
         scope = {g.target.id : self._new_name(g.target.id) for g in node.generators}
         self._enter(scope)
@@ -291,17 +276,10 @@ class Renamer(ast.NodeTransformer):
         self._exit()
         return ret
 
-    def visit_ListComp(self, node):
-        return self._visit_XxxComp(node)
-
-    def visit_SetComp(self, node):
-        return self._visit_XxxComp(node)
-
-    def visit_DictComp(self, node):
-        return self._visit_XxxComp(node)
-
-    def visit_GeneratorExp(self, node):
-        return self._visit_XxxComp(node)
+    visit_ListComp = _visit_XxxComp
+    visit_SetComp = _visit_XxxComp
+    visit_DictComp = _visit_XxxComp
+    visit_GeneratorExp = _visit_XxxComp
 
 def _main():
     import argparse
