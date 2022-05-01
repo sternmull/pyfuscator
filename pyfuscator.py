@@ -15,6 +15,7 @@ TODO:
 
 
 import ast
+import re
 
 def _names(nameOrNames):
     if isinstance(nameOrNames, ast.Name):
@@ -120,26 +121,23 @@ class Renamer(ast.NodeTransformer):
         self._lastArgId = 0
         self._arg2new = dict()
 
-    def _is_nonpublic(self, name):
-        if name.startswith('__'):
-            return False # don't rename special attributes
-
-        if not name.startswith('_'):
-            return False # don't rename non-private attributes
-
-        return True
+    def _is_private(self, name):
+        # see https://docs.python.org/3/tutorial/classes.html#private-variables
+        return name.startswith('_') and not name.endswith('__')
 
     def _new_name(self, orgName):
         self._lastNameId += 1
         return f'_v{self._lastNameId}'
 
-    def _attr_name(self, orgName):
+    def _attr_name(self, orgName, inClass=False):
         try:
             return self._attr2new[orgName]
         except KeyError:
-            if self._is_nonpublic(orgName):
+            if self._is_private(orgName):
                 self._lastAttrId += 1
                 new = f'_a{self._lastAttrId}'
+                if inClass and orgName.startswith('__'):
+                    new = '_' + new
             else:
                 new = orgName
 
@@ -150,7 +148,7 @@ class Renamer(ast.NodeTransformer):
         try:
             return self._arg2new[orgName]
         except KeyError:
-            if self._is_nonpublic(orgName):
+            if self._is_private(orgName):
                 self._lastArgId += 1
                 new = f'_p{self._lastArgId}'
             else:
@@ -178,7 +176,7 @@ class Renamer(ast.NodeTransformer):
         assert(len(self._org2new) == 0)
 
         defs = get_body_defs(node)
-        scope = {name : self._attr_name(name) for name in defs.locals if self._is_nonpublic(name)} | \
+        scope = {name : self._attr_name(name) for name in defs.locals if self._is_private(name)} | \
                 {name : self._attr_name(name) for name in defs.imports_as}
         self._enter(scope)
         ret = self.generic_visit(node)
@@ -249,8 +247,8 @@ class Renamer(ast.NodeTransformer):
         node.name = self._resolve(node.name)
 
         defs = get_body_defs(node)
-        scope = {name : self._attr_name(name) for name in defs.locals - defs.globals - defs.nonlocals} | \
-                {name : self._attr_name(name) for name in defs.imports_as}
+        scope = {name : self._attr_name(name, True) for name in defs.locals - defs.globals - defs.nonlocals} | \
+                {name : self._attr_name(name, True) for name in defs.imports_as}
 
         self._enter(scope)
         ret = self.generic_visit(node)

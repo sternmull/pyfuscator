@@ -1,10 +1,10 @@
 class _A:
     def __init__(self):
         self._a = 'instance of _A'
-    
+
     def _afunc(self, x):
         print('_afunc', x)
-    
+
     def _override(self, x):
         print('_override of _A', x)
 
@@ -51,3 +51,20 @@ class _Outer:
     class _Inner(_InnerBase):
         pass
 
+
+class Foo:
+    def __private_and_mangled(self, x):
+        print('mangled', x)
+
+    def _f(self):
+        self.__private_and_mangled(123)
+
+foo = Foo()
+foo._f()
+
+try:
+    foo.__private_and_mangled
+    print('this lookup should have failed!')
+    exit(1)
+except AttributeError:
+    print('this is expcted for lookup of a mangled property from outside the class')

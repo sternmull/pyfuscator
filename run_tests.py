@@ -23,14 +23,21 @@ def main():
         pyfuscator.obfuscate(org_py, obf_py)
 
         results = list()
+        failed = False
         for py in [org_py, obf_py]:
             r = subprocess.run([sys.executable, py], capture_output=True, text=True)
             results.append(f'exit code = {r.returncode}\n---------- stdout:\n{r.stdout}\n---------- stderr:\n{r.stderr}\n')
+            if r.returncode:
+                print(f' ERROR: Exit code {r.returncode} for {py}')
+                failed = True
 
         org, obf = results
         if org != obf:
-            failed_tests.append(org_py)
+            failed = True
             print('\n'.join(difflib.unified_diff(org.splitlines(), obf.splitlines(), 'output for original script', 'output for obfuscated script')))
+
+        if failed:
+            failed_tests.append(org_py)
 
     if failed_tests:
         print(f'{len(failed_tests)} tests failed:')
