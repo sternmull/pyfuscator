@@ -1,5 +1,7 @@
 """
 TODO:
+- preserve hashbang comments
+- reproduce exceution bit for output files
 - renamer
   - use __all__ on module level
   - support configurable blacklists for names (seperate vars, params, attribs?) that should not be replaced
