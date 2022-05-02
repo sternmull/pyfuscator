@@ -5,9 +5,8 @@ TODO:
   - support configurable blacklists for names (seperate vars, params, attribs?) that should not be replaced
   - Make sure to not use identifiers that are already present.
     Actually i am not sure collisions are practically possible right now, maybe it is already safe!
-  - match
   - reuse names from outer scopes as much as possible to make it harder to tell apart different variables (many name collisions until you take scope into account)
-  - Commandline options to obfuscate mulitple files?
+  - Commandline options to obfuscate multiple files?
     In general support and test multi-file operation that allows to access private attributes of other modules.
 - remove code that is not used (private functions/classes that are not used anywhere)
 """
@@ -60,6 +59,9 @@ class BodyDefCollector(ast.NodeVisitor):
 
     def visit_NamedExpr(self, node):
         self._add_local(node.target.id)
+
+    def visit_MatchAs(self, node):
+        self._add_local(node.name)
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -282,6 +284,10 @@ class Renamer(ast.NodeTransformer):
     visit_SetComp = _visit_XxxComp
     visit_DictComp = _visit_XxxComp
     visit_GeneratorExp = _visit_XxxComp
+
+    def visit_MatchAs(self, node):
+        node.name = self._resolve(node.name)
+        return node
 
 def _main():
     import argparse
