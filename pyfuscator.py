@@ -1,6 +1,5 @@
 """
 TODO:
-- preserve hashbang comments
 - reproduce exceution bit for output files
 - renamer
   - use __all__ on module level
@@ -16,6 +15,7 @@ TODO:
 
 import ast
 import re
+import codecs
 
 def _names(nameOrNames):
     if isinstance(nameOrNames, ast.Name):
@@ -291,6 +291,38 @@ class Renamer(ast.NodeTransformer):
         node.name = self._resolve(node.name)
         return node
 
+def _read_source(fn, encoding=None):
+    with open(fn, 'rb') as f:
+        raw = f.read()
+
+    # see https://docs.python.org/3/reference/lexical_analysis.html#encoding-declarations
+    # and PEP 263
+    if encoding is None:
+        for bom, enc in [
+            # NOTE: Turns out python does not support UTF16 or UTF32 for source files (https://bugs.python.org/issue1503789)
+            #(codecs.BOM_UTF32_BE, 'utf_32_be'),
+            #(codecs.BOM_UTF32_LE, 'utf_32_le'),
+            #(codecs.BOM_UTF16_BE, 'utf_16_be'),
+            #(codecs.BOM_UTF16_LE, 'utf_16_le'),
+            (codecs.BOM_UTF8, 'utf_8'),
+            ]:
+            if raw.startswith(bom):
+                encoding = enc
+                raw = raw[len(bom):]
+                break
+
+    if encoding is None:
+        # NOTE: No special handling for potential shebang line (cpython also doesn't do that)
+        for line in raw.splitlines()[:2]:
+            if m := re.match(rb'\s*#.*coding[=:]\s*([-\w.]+)', line):
+                encoding = m.group(1).decode()
+                break
+
+    if encoding is None:
+        encoding = 'utf_8'
+
+    return raw.decode(encoding=encoding)
+
 def _main():
     import argparse
     parser = argparse.ArgumentParser(description='Obfuscate a Python script')
@@ -303,16 +335,21 @@ def _main():
     args = parser.parse_args()
     obfuscate(args.input, args.output)
 
-def obfuscate(in_fn, out_fn):
-    with open(in_fn) as f:
-        s = f.read()
+def obfuscate(in_fn, out_fn, in_enc=None, out_enc='utf_8'):
+    s = _read_source(in_fn, in_enc)
+
+    sb = re.match(r'(#!.*?)$', s, re.M)
 
     root = ast.parse(s)
-
     root = Renamer().visit(root)
 
-    with open(out_fn, 'w') as f:
-        f.write(ast.unparse(root))
+    out = ast.unparse(root)
+
+    with open(out_fn, 'w', encoding=out_enc) as f:
+        # preserve shebang comment if there was one
+        if sb:
+            f.write(sb.group(1) + '\n')
+        f.write(out)
 
 
 if __name__ == '__main__':
